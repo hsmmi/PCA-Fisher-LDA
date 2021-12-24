@@ -1,55 +1,35 @@
 import os
-from random import randint
-import numpy as np
 import pandas as pd
+from normalization import clipping, log_scaling, range_min_to_max,\
+     zero_mean_unit_variance
 
-def build_testcase(N,p,q,Range):
-    with open(os.path.join(os.path.dirname(__file__),"HW1DS.txt"),'w') as f:
-        f.write(f'p in norm of all deviations is: {p}\n')
-
-    with open(os.path.join(os.path.dirname(__file__),"HW1DS.txt"),'a') as f:
-        f.write(f'q in deviation of each part is: {q}\n')
-
-    tmp = [None] * N
-    for i in range(N):
-        tmp[i] = randint(1, Range)-Range/2
-    tmp.sort()
-
-    with open(os.path.join(os.path.dirname(__file__),"HW1DS.txt"),'a') as f:
-        f.write(f'Points are: {tmp}\n')
-
-def read_testcase(file, printer = 0):
-    with open(os.path.join(os.path.dirname(__file__),file),'r') as f:
-        p = int(f.readline().split(':')[1])
-        q = int(f.readline().split(':')[1])
-        points = list(map(float, f.readline().split(':')[1][2:-2].split(',')))
-    points.sort()
-
-    if(printer):
-        print(f'p in norm of all deviations is:\n{p}\n')
-        print(f'q in deviation of each part is:\n{q}\n')
-        print(f'Points are:\n{points}\n')
-    return p, q, points
 
 def read_dataset(file, atr):
     if (type(atr) == int):
-        with open(os.path.join(os.path.dirname(__file__),file),'r') as f:
-            return list(map(lambda x: float(x.split(',')[atr]), f.read().splitlines()))
+        with open(os.path.join(os.path.dirname(__file__), file), 'r') as f:
+            return list(map(
+                lambda x: float(x.split(', ')[atr]), f.read().splitlines()))
     else:
-        with open(os.path.join(os.path.dirname(__file__),file),'r') as f:
-            return list(map(lambda x: [float(i) for i in (x.split(',')[atr[0]:atr[1]])], f.read().splitlines()))
+        with open(os.path.join(os.path.dirname(__file__), file), 'r') as f:
+            return list(map(
+                lambda x: [float(i) for i in (x.split(', ')[atr[0]:atr[1]])],
+                f.read().splitlines()))
+
 
 def read_dataset_with_pandas(file, atr=None):
-    colName = pd.read_csv(os.path.join(os.path.dirname(__file__),file),nrows=0).columns
+    colName = pd.read_csv(
+        os.path.join(os.path.dirname(__file__), file), nrows=0).columns
     if (type(atr) == int):
         colName = [colName[atr]]
-    elif(atr != None):
+    elif(atr is not None):
         colName = colName[atr[0]:atr[1]]
-    data = pd.read_csv(os.path.join(os.path.dirname(__file__),file),usecols=colName)
+    data = pd.read_csv(
+        os.path.join(os.path.dirname(__file__), file), usecols=colName)
 
     return colName, data
 
-def dataframe_to_docx_table(header,data,file,doc=None,save=1):
+
+def dataframe_to_docx_table(header, data, file, doc=None, save=1):
     """
     Read header and data
     If you gave if doc it add header and data to it and return it
@@ -57,37 +37,91 @@ def dataframe_to_docx_table(header,data,file,doc=None,save=1):
     Return doc include header and data
     """
     import docx
-    if(doc == None):
+    if(doc is None):
         doc = docx.Document()
     doc.add_heading(header, 1)
 
     table = doc.add_table(rows=len(data.index)+1, cols=len(data.columns)+1)
 
     for j in range(len(data.columns)):
-        table.cell(0,j+1).text = f'{data.columns[j]}'
+        table.cell(0, j+1).text = f'{data.columns[j]}'
 
     for i in range(len(data.index)):
-        table.cell(i+1,0).text = f'{data.index[i]}'
+        table.cell(i+1, 0).text = f'{data.index[i]}'
         for j in range(len(data.columns)):
-            table.cell(i+1,j+1).text = f'{data.iat[i,j]}'
+            table.cell(i+1, j+1).text = f'{data.iat[i, j]}'
     table.style = 'Table Grid'
     if(save):
         doc.save(file)
     return doc
+
 
 def string_to_dataframe(string):
     from io import StringIO
     data = StringIO(string)
     return pd.read_csv(data)
 
-def generate_dataset(
-    file: str, mean_ds: np.ndarray, cov_ds: np.ndarray,
-        sampels_size: int) -> pd.core.frame.DataFrame:
-    dataset = pd.DataFrame(data={'X1': [], 'X2': [], 'Y': []})
-    for i in range(mean_ds.shape[0]):
-        x1, x2 = np.random.multivariate_normal(
-            mean_ds[i], cov_ds[i], sampels_size).T
-        temp = pd.DataFrame(data={'X1': x1, 'X2': x2, 'Y': [i]*sampels_size})
-        dataset = pd.concat([dataset, temp], axis=0)
-    dataset.to_csv(file, index=False)
-    return dataset
+
+def read_dataset_to_X_and_y(
+        file, range_feature=None, range_label=None, normalization=None,
+        min_value=None, max_value=None, add_x0=False, shuffle=False,
+        about_nan=None):
+    """
+    Read the attribute(range_atr) that you want and put X0 = 1 and thoes
+    attribute of all samples in X and all samples label in y
+    normalization:
+    .   by default is None and can be "z_score", "scaling", "clipping"
+        or "log_scaling"
+    .   for "scaling", "clipping" must set min_value and max_value
+    Return X and y as nparray
+    """
+    import numpy as np
+    col_name, data = read_dataset_with_pandas(file)
+    if(about_nan == 'delete'):
+        data.dropna(inplace=True)
+
+    number_of_attribute = len(col_name)
+    data = data.to_numpy()
+
+    if(shuffle is True):
+        np.random.shuffle(data)
+
+    if(range_feature is None):
+        range_feature = (0, number_of_attribute-1)
+    if(range_label is None):
+        range_label = (number_of_attribute-1, number_of_attribute)
+
+    feature = np.array(list(map(
+        lambda x: x[range_feature[0]:range_feature[1]], data)))
+    label = np.array(list(map(
+        lambda x: x[range_label[0]:range_label[1]], data)))
+
+    if(normalization is not None):
+        if(normalization == 'z_score'):
+            feature = zero_mean_unit_variance(feature)
+        elif(normalization == 'scaling'):
+            feature = range_min_to_max(feature, min_value, max_value)
+        elif(normalization == 'clipping'):
+            feature = clipping(feature, min_value, max_value)
+        elif(normalization == 'logScaling'):
+            feature = log_scaling(feature)
+        else:
+            print(
+                'method should be "z_score", "scaling", "clipping" or'
+                '"logScaling"')
+            return
+
+    if(about_nan == 'class_mean'):
+        feature = feature.astype(float)
+        diffrent_label = np.unique(label)
+        number_of_feature = feature.shape[1]
+        number_of_sample = feature.shape[0]
+        for a_label in diffrent_label:
+            class_label = feature[(label == a_label).flatten()]
+            for a_feature in range(number_of_feature):
+                mean_feature_label = np.nanmean(class_label[:, a_feature])
+                for a_sample in range(number_of_sample):
+                    if np.isnan(feature[a_sample, a_feature]):
+                        feature[a_sample, a_feature] = mean_feature_label
+
+    return feature, label
