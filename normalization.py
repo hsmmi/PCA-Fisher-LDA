@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def zero_mean_unit_variance(mat):
+def z_score(mat):
     """
     Z-score normalization:
     Get a matrix(or vector) and return zero-mean unit-variance
