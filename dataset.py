@@ -14,6 +14,7 @@ class Dataset():
         self.mean_sample = None
         self.label = None
         self.diffrent_label = None
+        self.count_diffrent_label = None
         self.number_of_diffrent_label = None
         self.label_name = None
         self.number_of_feature = None
@@ -49,7 +50,8 @@ class Dataset():
         self.image_size = img_size
         self.sample = vector_images
         self.label = feelings
-        self.diffrent_label = np.unique(self.label)
+        self.diffrent_label, self.count_diffrent_label = np.unique(
+            self.label, return_counts=True)
         self.number_of_diffrent_label = self.diffrent_label.shape[0]
         self.label_name = np.array(['feeling'])
         self.number_of_feature = vector_images.shape[1]

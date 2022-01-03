@@ -1,7 +1,6 @@
-import numpy as np
 from dataset import Dataset
+from pca import PCA
 
-dataset = Dataset()
-dataset.read_dataset('dataset/jaffe', 64)
+
 
 print('stop')

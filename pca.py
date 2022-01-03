@@ -91,4 +91,3 @@ for k in diffrent_k:
     pca.visualization(
         pca.reconstructed_sample,
         f'PCA-Images after reconstruction with k = {k}')
-print('stop')
