@@ -15,3 +15,7 @@ def recall_score(y_input, predicted):
 
 def f1_score(y_input, predicted):
     return 2 * (y_input * predicted).sum() / (y_input + predicted).sum()
+
+
+def mean_squared_error(true_image, recon_image):
+    return np.mean((true_image-recon_image)**2)

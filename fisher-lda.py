@@ -2,6 +2,7 @@ from copy import deepcopy
 from matplotlib import pyplot as plt
 import numpy as np
 from dataset import Dataset
+from score import mean_squared_error
 
 
 class FisherLDA():
@@ -110,15 +111,30 @@ dataset = Dataset()
 dataset.read_dataset('dataset/jaffe', 64)
 fisher_lda = FisherLDA()
 fisher_lda.fit(dataset)
-diffrent_k = [1, 6, 29]
-fisher_lda.visualization(
-    fisher_lda.dataset.sample, 'Fisher_LDA-Images before transformation')
-fisher_lda.visualization(
-    fisher_lda.eigenvectors, 'Fisher_LDA-Eigenfaces', False)
-for k in diffrent_k:
+# diffrent_k = [1, 6, 29]
+# fisher_lda.visualization(
+#     fisher_lda.dataset.sample, 'Fisher_LDA-Images before transformation')
+# fisher_lda.visualization(
+#     fisher_lda.eigenvectors, 'Fisher_LDA-Eigenfaces', False)
+# for k in diffrent_k:
+#     fisher_lda.transformation(k)
+#     fisher_lda.reconstruction()
+#     fisher_lda.visualization(
+#         fisher_lda.reconstructed_sample,
+#         f'Fisher_LDA-Images after reconstruction with k = {k}')
+
+x = []
+y = []
+for k in range(1, 200):
+    x.append(k)
     fisher_lda.transformation(k)
     fisher_lda.reconstruction()
-    fisher_lda.visualization(
-        fisher_lda.reconstructed_sample,
-        f'Fisher_LDA-Images after reconstruction with k = {k}')
+    y.append(mean_squared_error(
+        fisher_lda.dataset.sample, fisher_lda.reconstructed_sample))
+plt.plot(x, y)
+plt.xlabel('Number of components')
+plt.ylabel('MSE')
+plt.title('Fisher_LDA-MSE between the original and reconstructed images')
+plt.savefig(
+    'report/Fisher_LDA-MSE between the original and reconstructed images.png')
 print('stop')

@@ -3,6 +3,8 @@ import numpy as np
 from dataset import Dataset
 from copy import deepcopy
 
+from score import mean_squared_error
+
 
 class PCA():
     def __init__(self):
@@ -82,12 +84,25 @@ dataset = Dataset()
 dataset.read_dataset('dataset/jaffe', 64)
 pca = PCA()
 pca.fit(dataset)
-diffrent_k = [1, 40, 120]
-pca.visualization(pca.centered_sample, 'PCA-Images before transformation')
-pca.visualization(pca.eigenvectors, 'PCA-Eigenfaces', False, False)
-for k in diffrent_k:
+# diffrent_k = [1, 40, 120]
+# pca.visualization(pca.centered_sample, 'PCA-Images before transformation')
+# pca.visualization(pca.eigenvectors, 'PCA-Eigenfaces', False, False)
+# for k in diffrent_k:
+#     pca.transformation(k)
+#     pca.reconstruction()
+#     pca.visualization(
+#         pca.reconstructed_sample,
+#         f'PCA-Images after reconstruction with k = {k}')
+
+x = []
+y = []
+for k in range(1, 200):
+    x.append(k)
     pca.transformation(k)
     pca.reconstruction()
-    pca.visualization(
-        pca.reconstructed_sample,
-        f'PCA-Images after reconstruction with k = {k}')
+    y.append(mean_squared_error(pca.centered_sample, pca.reconstructed_sample))
+plt.plot(x, y)
+plt.xlabel('Number of components')
+plt.ylabel('MSE')
+plt.title('PCA-MSE between the original and reconstructed images')
+plt.savefig('report/PCA-MSE between the original and reconstructed images.png')
